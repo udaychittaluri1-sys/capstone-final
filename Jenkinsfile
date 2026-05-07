@@ -1,54 +1,221 @@
+// ============================================
+// Jenkins CI/CD Pipeline
+// UI + API Hybrid Automation Framework
+// ============================================
+
 pipeline {
     agent any
 
+    parameters {
+        choice(
+            name: 'BROWSER',
+            choices: ['chrome', 'firefox', 'edge'],
+            description: 'Browser for UI tests'
+        )
+
+        choice(
+            name: 'ENV',
+            choices: ['dev', 'staging', 'production'],
+            description: 'Target environment'
+        )
+
+        booleanParam(
+            name: 'HEADLESS',
+            defaultValue: true,
+            description: 'Run in headless mode'
+        )
+
+        string(
+            name: 'PARALLEL_WORKERS',
+            defaultValue: '4',
+            description: 'Number of parallel workers'
+        )
+    }
+
     environment {
-        PYTHON = "C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe"
+        TEST_ENV = "${params.ENV}"
+        BROWSER = "${params.BROWSER}"
+        HEADLESS = "${params.HEADLESS}"
+        PYTHONPATH = "${WORKSPACE}"
     }
 
     stages {
 
+        // ============================================
+        // Checkout Source Code
+        // ============================================
+
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                url: 'https://github.com/udaychittaluri1-sys/capstone-final.git'
+
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/sudheerkasha/CAPSTONE.git'
+                    ]]
+                ])
+
+                echo "Code checked out successfully from GitHub repository"
             }
         }
 
-        stage('Install Dependencies') {
+        // ============================================
+        // Setup Python Environment
+        // ============================================
+
+        stage('Setup Environment') {
             steps {
-                bat '"%PYTHON%" -m pip install --upgrade pip'
-                bat '"%PYTHON%" -m pip install -r requirements.txt'
+
+                script {
+
+                    if (isUnix()) {
+
+                        sh '''
+                            python3 -m venv venv
+                            . venv/bin/activate
+                            pip install --upgrade pip
+                            pip install -r requirements.txt
+                        '''
+
+                    } else {
+
+                        bat '''
+                            python -m venv venv
+                            call venv\\Scripts\\activate
+                            pip install --upgrade pip
+                            pip install -r requirements.txt
+                        '''
+                    }
+                }
             }
         }
 
-        stage('Run API Tests') {
+        // ============================================
+        // API Health Check
+        // ============================================
+
+        stage('API Health Check') {
             steps {
-                bat '"%PYTHON%" -m pytest tests --html=reports/api_report.html'
+
+                script {
+
+                    if (isUnix()) {
+
+                        sh '''
+                            . venv/bin/activate
+                            python -c "import requests; r=requests.get('https://practice.expandtesting.com/notes/api/health-check'); print(f'API Status: {r.status_code}')"
+                        '''
+
+                    } else {
+
+                        bat '''
+                            call venv\\Scripts\\activate
+                            python -c "import requests; r=requests.get('https://practice.expandtesting.com/notes/api/health-check'); print(f'API Status: {r.status_code}')"
+                        '''
+                    }
+                }
             }
         }
 
-        stage('Run UI Tests') {
+        // ============================================
+        // Run Complete Test Suite
+        // ============================================
+
+        stage('Run Tests') {
+
             steps {
-                bat '"%PYTHON%" -m pytest tests --html=reports/ui_report.html'
+
+                script {
+
+                    def cmd = """
+                    pytest tests/ ^
+                    -v ^
+                    -s ^
+                    --junitxml=reports/results.xml ^
+                    --alluredir=reports/allure-results ^
+                    --reruns=2 ^
+                    --reruns-delay=2
+                    """
+
+                    runTests(cmd)
+                }
             }
         }
 
-        stage('Run E2E Tests') {
-            steps {
-                bat '"%PYTHON%" -m pytest tests --html=reports/e2e_report.html'
-            }
-        }
+        // ============================================
+        // Generate Allure Report
+        // ============================================
 
-        stage('Run Regression Tests') {
+        stage('Generate Allure Report') {
+
             steps {
-                bat '"%PYTHON%" -m pytest tests --html=reports/regression_report.html'
+
+                allure(
+                    includeProperties: false,
+                    jdk: '',
+                    results: [[path: 'reports/allure-results']]
+                )
             }
         }
     }
 
+    // ============================================
+    // Post Actions
+    // ============================================
+
     post {
+
         always {
-            archiveArtifacts artifacts: 'reports/*.html', fingerprint: true
+
+            echo 'Archiving test artifacts...'
+
+            archiveArtifacts(
+                artifacts: 'reports/**/*',
+                allowEmptyArchive: true
+            )
+
+            junit(
+                testResults: 'reports/results.xml',
+                allowEmptyResults: true
+            )
         }
+
+        success {
+
+            echo ' All tests PASSED!'
+        }
+
+        failure {
+
+            echo ' Some tests FAILED. Check Allure report for details.'
+        }
+
+        cleanup {
+
+            cleanWs()
+        }
+    }
+}
+
+// ============================================
+// Helper Function
+// ============================================
+
+def runTests(String command) {
+
+    if (isUnix()) {
+
+        sh """
+            . venv/bin/activate
+            ${command}
+        """
+
+    } else {
+
+        bat """
+            call venv\\Scripts\\activate
+            ${command}
+        """
     }
 }
