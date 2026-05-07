@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        PYTHON = "C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe"
+    }
+
     stages {
 
         stage('Checkout') {
@@ -12,32 +16,32 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pip install --upgrade pip'
-                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pip install -r requirements.txt'
+                bat '"%PYTHON%" -m pip install --upgrade pip'
+                bat '"%PYTHON%" -m pip install -r requirements.txt'
             }
         }
 
         stage('Run API Tests') {
             steps {
-                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pytest tests/api --html=reports/api_report.html'
+                bat '"%PYTHON%" -m pytest tests --html=reports/api_report.html'
             }
         }
 
         stage('Run UI Tests') {
             steps {
-                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pytest tests/ui --html=reports/ui_report.html'
+                bat '"%PYTHON%" -m pytest tests --html=reports/ui_report.html'
             }
         }
 
         stage('Run E2E Tests') {
             steps {
-                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pytest tests/e2e --html=reports/e2e_report.html'
+                bat '"%PYTHON%" -m pytest tests --html=reports/e2e_report.html'
             }
         }
 
         stage('Run Regression Tests') {
             steps {
-                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pytest tests/regression --html=reports/regression_report.html'
+                bat '"%PYTHON%" -m pytest tests --html=reports/regression_report.html'
             }
         }
     }
