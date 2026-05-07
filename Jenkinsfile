@@ -12,31 +12,32 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat 'pip install -r requirements.txt'
+                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pip install --upgrade pip'
+                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pip install -r requirements.txt'
             }
         }
 
         stage('Run API Tests') {
             steps {
-                bat 'pytest tests/api --html=reports/api_report.html'
+                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pytest tests/api --html=reports/api_report.html'
             }
         }
 
         stage('Run UI Tests') {
             steps {
-                bat 'pytest tests/ui --html=reports/ui_report.html'
+                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pytest tests/ui --html=reports/ui_report.html'
             }
         }
 
         stage('Run E2E Tests') {
             steps {
-                bat 'pytest tests/e2e --html=reports/e2e_report.html'
+                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pytest tests/e2e --html=reports/e2e_report.html'
             }
         }
 
         stage('Run Regression Tests') {
             steps {
-                bat 'pytest tests/regression --html=reports/regression_report.html'
+                bat '"C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe" -m pytest tests/regression --html=reports/regression_report.html'
             }
         }
     }
