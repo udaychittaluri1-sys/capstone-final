@@ -4,7 +4,12 @@
 // ============================================
 
 pipeline {
+
     agent any
+
+    // ============================================
+    // Parameters
+    // ============================================
 
     parameters {
 
@@ -33,12 +38,13 @@ pipeline {
         )
     }
 
+    // ============================================
+    // Environment Variables
+    // ============================================
+
     environment {
 
-        // ============================================
         // Python Path
-        // ============================================
-
         PYTHON = "C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe"
 
         TEST_ENV = "${params.ENV}"
@@ -70,7 +76,7 @@ pipeline {
         }
 
         // ============================================
-        // Verify Python
+        // Verify Python Installation
         // ============================================
 
         stage('Verify Python') {
@@ -79,13 +85,12 @@ pipeline {
 
                 bat '''
                     "%PYTHON%" --version
-                    where python
                 '''
             }
         }
 
         // ============================================
-        // Setup Python Environment
+        // Setup Python Virtual Environment
         // ============================================
 
         stage('Setup Environment') {
@@ -99,7 +104,9 @@ pipeline {
                         sh '''
                             python3 -m venv venv
                             . venv/bin/activate
-                            pip install --upgrade pip
+
+                            python -m pip install --upgrade pip
+
                             pip install -r requirements.txt
                         '''
 
@@ -133,6 +140,7 @@ pipeline {
 
                         sh '''
                             . venv/bin/activate
+
                             python -c "import requests; r=requests.get('https://practice.expandtesting.com/notes/api/health-check'); print(f'API Status: {r.status_code}')"
                         '''
 
@@ -149,7 +157,7 @@ pipeline {
         }
 
         // ============================================
-        // Run Complete Test Suite
+        // Run Test Suite
         // ============================================
 
         stage('Run Tests') {
