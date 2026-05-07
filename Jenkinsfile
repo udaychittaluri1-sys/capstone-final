@@ -7,6 +7,7 @@ pipeline {
     agent any
 
     parameters {
+
         choice(
             name: 'BROWSER',
             choices: ['chrome', 'firefox', 'edge'],
@@ -33,6 +34,13 @@ pipeline {
     }
 
     environment {
+
+        // ============================================
+        // Python Path
+        // ============================================
+
+        PYTHON = "C:\\Users\\chitt\\AppData\\Local\\Programs\\Python\\Python311\\python.exe"
+
         TEST_ENV = "${params.ENV}"
         BROWSER = "${params.BROWSER}"
         HEADLESS = "${params.HEADLESS}"
@@ -46,6 +54,7 @@ pipeline {
         // ============================================
 
         stage('Checkout') {
+
             steps {
 
                 checkout([
@@ -61,10 +70,26 @@ pipeline {
         }
 
         // ============================================
+        // Verify Python
+        // ============================================
+
+        stage('Verify Python') {
+
+            steps {
+
+                bat '''
+                    "%PYTHON%" --version
+                    where python
+                '''
+            }
+        }
+
+        // ============================================
         // Setup Python Environment
         // ============================================
 
         stage('Setup Environment') {
+
             steps {
 
                 script {
@@ -81,9 +106,12 @@ pipeline {
                     } else {
 
                         bat '''
-                            python -m venv venv
+                            "%PYTHON%" -m venv venv
+
                             call venv\\Scripts\\activate
-                            pip install --upgrade pip
+
+                            python -m pip install --upgrade pip
+
                             pip install -r requirements.txt
                         '''
                     }
@@ -96,6 +124,7 @@ pipeline {
         // ============================================
 
         stage('API Health Check') {
+
             steps {
 
                 script {
@@ -111,6 +140,7 @@ pipeline {
 
                         bat '''
                             call venv\\Scripts\\activate
+
                             python -c "import requests; r=requests.get('https://practice.expandtesting.com/notes/api/health-check'); print(f'API Status: {r.status_code}')"
                         '''
                     }
@@ -183,12 +213,12 @@ pipeline {
 
         success {
 
-            echo ' All tests PASSED!'
+            echo 'All tests PASSED!'
         }
 
         failure {
 
-            echo ' Some tests FAILED. Check Allure report for details.'
+            echo 'Some tests FAILED. Check Allure report for details.'
         }
 
         cleanup {
